@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>QR Dataset Decoder</title>
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="theme-color" content="#0a7cff">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+
+<style>
+table{
+border-collapse:collapse;
+font-family:Arial;
+}
+td,th{
+border:1px solid #444;
+padding:5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>Scan QR Code</h2>
+
+<div id="reader" style="width:300px"></div>
+
+<h3>Dataset</h3>
+
+<table id="tableData"></table>
+
+<script>
+
+function decompressData(base64Data)
+{
+    try{
+
+        var binary = atob(base64Data)
+
+        var bytes = Uint8Array.from(binary, c => c.charCodeAt(0))
+
+        var json = pako.inflate(bytes, { to: 'string' })
+
+        return json
+
+    }
+    catch(e){
+        alert("Decompression failed")
+        console.log(e)
+    }
+}
+
+function showTable(json)
+{
+    var data = JSON.parse(json)
+
+    var table = document.getElementById("tableData")
+
+    table.innerHTML=""
+
+    if(data.length==0)
+        return
+
+    var header = "<tr>"
+
+    for(var key in data[0])
+        header += "<th>"+key+"</th>"
+
+    header += "</tr>"
+
+    table.innerHTML += header
+
+    for(var i=0;i<data.length;i++)
+    {
+        var row="<tr>"
+
+        for(var key in data[i])
+            row += "<td>"+data[i][key]+"</td>"
+
+        row+="</tr>"
+
+        table.innerHTML += row
+    }
+}
+
+function onScanSuccess(decodedText)
+{
+    try{
+
+        var json = decompressData(decodedText)
+
+        showTable(json)
+
+    }
+    catch(err){
+
+        alert("Invalid QR data")
+        console.log(err)
+
+    }
+}
+
+var scanner = new Html5QrcodeScanner(
+"reader",
+{
+    fps: 10,
+    qrbox: { width: 250, height: 250 },
+    rememberLastUsedCamera: true,
+    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+}
+)
+
+scanner.render(onScanSuccess)
+
+</script>
+<script>
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+}
+
+</script>
+
+</body>
+</html>
